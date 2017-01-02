@@ -36,14 +36,14 @@ class HTCondorDriver(DispatchDriver):
 Universe       = vanilla
 Executable     = /software/python-2.7.10/bin/python
 
-name = "%s-%d"
+#name = "%s-%d"
 
 output  = %s 
-error   = %s
+error   = %s.err
 
 getenv = True
 
-arguments = %s --run-job \\"%s\\" .
+arguments = %s --run-job %s .
  
 Queue
 """
@@ -59,7 +59,7 @@ Queue
                                    shell=True)
         output = process.communicate(input=condor_submit_script)[0]
         process.stdin.close()
-	
+
         # Parse out the job id.
         match = re.search(r'(\d+).(\d+)\s+-\s+(\d+).(\d+)', output)
 
@@ -71,7 +71,7 @@ Queue
     def is_proc_alive(self, job_id, sgeid):
         try:
             #query the job status
-            process = subprocess.Popen(" ".join(["condor_q",str(sgeid)]),
+            process = subprocess.Popen(" ".join(["condor_q",str(sgeid)+".0"]),
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT,
                                    shell=True)
@@ -83,7 +83,7 @@ Queue
             outputlines.pop(0)
             
             
-            find_job_status_match = re.search(r'(\d+.\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)', outputlines[0])
+            find_job_status_match = re.search(r'(\d+.\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(.+)$', outputlines[0])
             
             job_ST = None
             if find_job_status_match:
@@ -92,6 +92,8 @@ Queue
                 return False
             if job_ST in ['R','I','S']:
                 return True
+            else:
+                print job_ST
             return False
 	except Exception as e:
 	    raise e#just rethrow. Might add a finally later            
